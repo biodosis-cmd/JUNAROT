@@ -1,7 +1,7 @@
 {
-  "name": "Control de Alimentación JUNAEB",
-  "short_name": "Alimentación",
-  "description": "Aplicación para el registro de alimentación escolar",
+  "name": "Nueva ROT - Control de Alimentación",
+  "short_name": "Nueva ROT",
+  "description": "Control y Asistencia de Alimentación Escolar JUNAEB - Escuela Nueva ROT",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#f9fafb",

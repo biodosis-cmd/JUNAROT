@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Control de Alimentación - JUNAEB</title>
+  <title>Nueva ROT - Control de Alimentación JUNAEB</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzAwNTZiMyIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkeT0iLjMyZW0iIGZpbGw9IiNmZmYiIGZvbnQtc2l6ZT0iNDAiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkosPC90ZXh0Pjwvc3ZnPg==">
@@ -13,9 +13,11 @@
   <!-- Vista Login -->
   <main id="login-view" class="view active">
     <div class="login-container">
-      <h1>JUNAEB</h1>
-      <h2>Control de Asistencia</h2>
-      <p>Alimentación Escolar</p>
+      <div class="login-brand">
+        <h1>Nueva ROT</h1>
+        <h2>Control de Asistencia</h2>
+        <p>Alimentación Escolar JUNAEB</p>
+      </div>
       
       <form id="login-form">
         <div class="input-group">
@@ -28,14 +30,6 @@
         </div>
         <button type="submit" class="btn-primary">Ingresar</button>
       </form>
-      <div id="connection-status" style="margin-top: 12px; font-size: 0.85rem; color: #007bff; font-weight: 600;">
-        🟢 Versión 2.0 (Sincronización en español)
-      </div>
-      
-      <div class="demo-info">
-        <p><strong>Modo Demo (Docente):</strong><br>RUT <code>16789012-3</code> | Clave <code>1234</code></p>
-        <p style="margin-top: 8px;"><strong>Modo Demo (Inspector):</strong><br>RUT <code>12345678-9</code> | Clave <code>1234</code></p>
-      </div>
     </div>
   </main>
 
@@ -116,6 +110,6 @@
     </div>
   </main>
   
-  <script src="app.js?v=18"></script>
+  <script src="app.js?v=19"></script>
 </body>
 </html>

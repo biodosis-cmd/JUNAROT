@@ -15,6 +15,9 @@ const MOCK_DATA = {
     { id: 103, run: "22.555.666-7", nombreCompleto: "Martina Antonia Rojas", curso: "2° Básico" },
     { id: 104, run: "21.000.111-2", nombreCompleto: "Joaquín Ignacio Pérez", curso: "8° Básico" },
     { id: 105, run: "21.333.444-5", nombreCompleto: "Florencia Belén Soto", curso: "8° Básico" }
+  ],
+  suspensiones: [
+    { fecha: "2026-10-12", motivo: "Feriado Encuentro de Dos Mundos", tipo: "Feriado Nacional / Regional" }
   ]
 };
 
@@ -24,6 +27,12 @@ let activeData = JSON.parse(localStorage.getItem('junaeb_data')) || MOCK_DATA;
 // Función auxiliar para obtener fecha local en formato YYYY-MM-DD (Chile/Local)
 function getLocalDateString(d = new Date()) {
   return d.toLocaleDateString('en-CA');
+}
+
+// Verifica si una fecha tiene clases suspendidas o es feriado
+function getSuspensionForDate(dateStr) {
+  const list = (activeData && activeData.suspensiones) || MOCK_DATA.suspensiones || [];
+  return list.find(s => String(s.fecha).trim() === String(dateStr).trim()) || null;
 }
 
 // Estado de la Aplicación
@@ -86,6 +95,10 @@ async function init() {
   
   dateInput.addEventListener('change', (e) => {
     selectedDate = e.target.value;
+    const susp = getSuspensionForDate(selectedDate);
+    if (susp) {
+      showToast(`⚠️ Clases suspendidas: ${susp.motivo || 'Día no lectivo'}`);
+    }
     renderStudents();
   });
   
@@ -96,6 +109,11 @@ async function init() {
   
   mealTabs.forEach(tab => {
     tab.addEventListener('click', (e) => {
+      if (getSuspensionForDate(selectedDate)) {
+        showToast('🚫 No es posible registrar raciones en días con clases suspendidas.');
+        return;
+      }
+
       // Haptic feedback simulado
       if (navigator.vibrate) navigator.vibrate(10);
       
@@ -111,6 +129,32 @@ async function init() {
   updateSyncBadge();
 }
 
+// Verifica y actualiza el banner y los controles si el día tiene clases suspendidas
+function checkSuspensionStatus() {
+  const banner = document.getElementById('suspension-banner');
+  const titleEl = document.getElementById('suspension-title');
+  const descEl = document.getElementById('suspension-desc');
+  const susp = getSuspensionForDate(selectedDate);
+
+  if (susp) {
+    if (banner) {
+      banner.style.display = 'flex';
+      if (titleEl) titleEl.textContent = `🚫 Clases Suspendidas (${susp.tipo || 'Día no lectivo'})`;
+      if (descEl) descEl.textContent = susp.motivo 
+        ? `${susp.motivo} (No se permite registrar raciones)` 
+        : 'Este día no cuenta con servicio de alimentación escolar en el Calendario.';
+    }
+    mealTabs.forEach(t => t.classList.add('control-disabled'));
+    syncBtn.classList.add('control-disabled');
+    return true;
+  } else {
+    if (banner) banner.style.display = 'none';
+    mealTabs.forEach(t => t.classList.remove('control-disabled'));
+    syncBtn.classList.remove('control-disabled');
+    return false;
+  }
+}
+
 // Carga de datos remotos desde Google Apps Script
 async function fetchRemoteData() {
   try {
@@ -123,6 +167,9 @@ async function fetchRemoteData() {
       activeData = data;
       localStorage.setItem('junaeb_data', JSON.stringify(data));
       console.log('Datos remotos sincronizados desde Google Sheets:', data);
+      if (currentUser) {
+        renderStudents();
+      }
     } else {
       console.log('Google Sheets no tiene filas de usuarios aún, usando respaldo demo.');
     }
@@ -246,6 +293,11 @@ function getRecordKey(studentId, date, meal) {
 
 // Marcar / Desmarcar Inasistencia (Ausente)
 function toggleAbsent(studentId) {
+  if (getSuspensionForDate(selectedDate)) {
+    showToast('🚫 No es posible registrar inasistencias en días con clases suspendidas.');
+    return;
+  }
+
   // Si ya está registrado en Google Sheets como ausente, no modificar
   if (isStudentAlreadyAbsentInDb(studentId, selectedDate)) {
     showToast('ℹ️ La inasistencia de este estudiante ya está guardada en Google Sheets.');
@@ -294,6 +346,11 @@ function toggleAbsent(studentId) {
 
 // Marcar / Desmarcar Ración de Comida
 function toggleRecord(studentId) {
+  if (getSuspensionForDate(selectedDate)) {
+    showToast('🚫 No es posible registrar raciones en días con clases suspendidas.');
+    return;
+  }
+
   // Si el estudiante está ausente hoy, bloquear entrega de ración
   if (isStudentAbsent(studentId, selectedDate)) {
     showToast('🚫 Estudiante ausente. Desmárcalo de ausente primero si asistió a clases.');
@@ -337,6 +394,21 @@ function toggleRecord(studentId) {
 
 // Renderizado de lista de estudiantes
 function renderStudents() {
+  if (checkSuspensionStatus()) {
+    studentsList.innerHTML = `
+      <div style="background: white; border-radius: 12px; padding: 2.5rem 1.5rem; text-align: center; border: 1.5px dashed #fca5a5; margin-top: 0.5rem;">
+        <div style="font-size: 3rem; margin-bottom: 0.75rem;">📅🚫</div>
+        <h3 style="color: #991b1b; font-size: 1.15rem; margin-bottom: 0.5rem;">Día no lectivo / Clases suspendidas</h3>
+        <p style="color: #7f1d1d; font-size: 0.9rem; max-width: 320px; margin: 0 auto; line-height: 1.4;">
+          Este día está registrado sin actividades escolares en el Calendario. Para pasar asistencia o registrar raciones, selecciona un día lectivo en el selector de fecha superior.
+        </p>
+      </div>
+    `;
+    totalRacionesEl.textContent = '0';
+    totalAusentesEl.textContent = '0';
+    return;
+  }
+
   const sourceStudents = (activeData.estudiantes && activeData.estudiantes.length > 0)
     ? activeData.estudiantes.filter(s => !s.estado || String(s.estado).trim().toLowerCase() === 'activo')
     : MOCK_DATA.estudiantes;
@@ -459,6 +531,11 @@ function updateSyncBadge() {
 }
 
 async function handleSync() {
+  if (getSuspensionForDate(selectedDate)) {
+    showToast('🚫 No se pueden sincronizar raciones en una fecha con clases suspendidas.');
+    return;
+  }
+
   const unsyncedKeys = Object.keys(records).filter(k => !records[k].synced);
   
   if (unsyncedKeys.length === 0) {

@@ -97,12 +97,34 @@ function doGet(e) {
       });
     }
 
+    // 4. Obtener fechas con suspensión de clases o feriados desde Calendario
+    const wsCalendario = ss.getSheetByName('Calendario');
+    let suspensiones = [];
+    if (wsCalendario && wsCalendario.getLastRow() > 1) {
+      const dataCal = wsCalendario.getDataRange().getValues();
+      dataCal.shift(); // Quitar cabecera
+      suspensiones = dataCal.map(row => {
+        let fStr = '';
+        if (row[0] instanceof Date) {
+          fStr = Utilities.formatDate(row[0], 'America/Santiago', 'yyyy-MM-dd');
+        } else {
+          fStr = String(row[0]).trim();
+        }
+        return {
+          fecha: fStr,
+          motivo: String(row[1] || '').trim(),
+          tipo: String(row[2] || '').trim()
+        };
+      }).filter(s => s.fecha && s.fecha.length >= 8);
+    }
+
     return ContentService.createTextOutput(JSON.stringify({
       status: 'success',
-      version: 'v2-ausentes',
+      version: 'v3-calendario-safe',
       usuarios: usuarios,
       estudiantes: estudiantes,
-      registros: registros
+      registros: registros,
+      suspensiones: suspensiones
     })).setMimeType(ContentService.MimeType.JSON);
 
   } catch (error) {
@@ -147,6 +169,18 @@ function doPost(e) {
       wsRegistros.getRange(1, 1, 1, CABECERAS_REGISTROS.length).setValues([CABECERAS_REGISTROS]);
     }
 
+    // Cargar set de fechas suspendidas en Calendario para evitar guardar raciones en días no lectivos
+    const wsCalendario = ss.getSheetByName('Calendario');
+    const suspensionesSet = new Set();
+    if (wsCalendario && wsCalendario.getLastRow() > 1) {
+      const dataCal = wsCalendario.getDataRange().getValues();
+      dataCal.shift();
+      dataCal.forEach(row => {
+        let fStr = row[0] instanceof Date ? Utilities.formatDate(row[0], 'America/Santiago', 'yyyy-MM-dd') : String(row[0]).trim();
+        if (fStr) suspensionesSet.add(fStr);
+      });
+    }
+
     // Cargar set de raciones que ya existen en la base de datos para evitar duplicados
     const existingSet = new Set();
     if (wsRegistros.getLastRow() > 1) {
@@ -170,6 +204,12 @@ function doPost(e) {
       const racion = rawMeal.includes('desayuno') ? 'Desayuno' :
                      rawMeal.includes('ausente') ? 'Ausente' : 'Almuerzo';
       const key = `${studentId}_${fecha}_${racion.toLowerCase()}`;
+
+      // Si la fecha está suspendida en Calendario, no registrar ración
+      if (suspensionesSet.has(fecha)) {
+        duplicadosOmitidos++;
+        return;
+      }
 
       // Si ya existe en la base de datos para ese día y ración, NO duplicar
       if (existingSet.has(key)) {

@@ -458,13 +458,13 @@ function crearPestanaEstadisticas() {
     wsEstudiantes.getRange('G1').setValue('totalAusencias');
     wsEstudiantes.getRange('G1').setFontWeight('bold');
     const totalEst = Math.max(wsEstudiantes.getLastRow(), 2);
-    // Cuenta almuerzos en el período activo
+    // Cuenta almuerzos en el período activo (emparejado por RUN para evitar discrepancias de tipo número/texto)
     wsEstudiantes.getRange('F2').setFormula(
-      `=IF(A2<>""; IF('Estadísticas'!$B$3="Global (Todo el historial)"${sep} COUNTIFS(Registros!A:A; A2; Registros!F:F; "Almuerzo")${sep} COUNTIFS(Registros!A:A; A2; Registros!F:F; "Almuerzo"; Registros!E:E; ">=" & 'Estadísticas'!$Z$1; Registros!E:E; "<=" & 'Estadísticas'!$Z$2)); "")`
+      `=IF(B2<>""; IF('Estadísticas'!$B$3="Global (Todo el historial)"${sep} COUNTIFS(Registros!B:B; B2; Registros!F:F; "Almuerzo")${sep} COUNTIFS(Registros!B:B; B2; Registros!F:F; "Almuerzo"; Registros!E:E; ">=" & 'Estadísticas'!$Z$1; Registros!E:E; "<=" & 'Estadísticas'!$Z$2)); "")`
     );
     // Cuenta inasistencias en el período activo
     wsEstudiantes.getRange('G2').setFormula(
-      `=IF(A2<>""; IF('Estadísticas'!$B$3="Global (Todo el historial)"${sep} COUNTIFS(Registros!A:A; A2; Registros!F:F; "Ausente")${sep} COUNTIFS(Registros!A:A; A2; Registros!F:F; "Ausente"; Registros!E:E; ">=" & 'Estadísticas'!$Z$1; Registros!E:E; "<=" & 'Estadísticas'!$Z$2)); "")`
+      `=IF(B2<>""; IF('Estadísticas'!$B$3="Global (Todo el historial)"${sep} COUNTIFS(Registros!B:B; B2; Registros!F:F; "Ausente")${sep} COUNTIFS(Registros!B:B; B2; Registros!F:F; "Ausente"; Registros!E:E; ">=" & 'Estadísticas'!$Z$1; Registros!E:E; "<=" & 'Estadísticas'!$Z$2)); "")`
     );
     if (totalEst > 2) {
       wsEstudiantes.getRange('F2').copyTo(wsEstudiantes.getRange(3, 6, totalEst - 2, 1));
@@ -905,8 +905,13 @@ function crearPestanaMatrizCurso() {
 
     for (let c = 0; c < letters.length; c++) {
       const col = letters[c];
+      const noRec = `IF(COUNTIF(Calendario!$A:$A${sep} ${col}$4) + COUNTIF(Calendario!$A:$A${sep} TEXT(${col}$4${sep} "yyyy-mm-dd")) > 0${sep} "SUS"${sep} IF(${col}$4 > TODAY()${sep} ""${sep} "-"))`;
+      const hasAus = `COUNTIFS(Registros!B:B${sep} $B${r}${sep} Registros!E:E${sep} TEXT(${col}$4${sep} "yyyy-mm-dd")${sep} Registros!F:F${sep} "Ausente") > 0`;
+      const hasD = `COUNTIFS(Registros!B:B${sep} $B${r}${sep} Registros!E:E${sep} TEXT(${col}$4${sep} "yyyy-mm-dd")${sep} Registros!F:F${sep} "Desayuno") > 0`;
+      const hasA = `COUNTIFS(Registros!B:B${sep} $B${r}${sep} Registros!E:E${sep} TEXT(${col}$4${sep} "yyyy-mm-dd")${sep} Registros!F:F${sep} "Almuerzo") > 0`;
+
       sheet.getRange(`${col}${r}`).setFormula(
-        `=IF(OR($B${r}=""${sep} ${col}$4="")${sep} ""${sep} IF(COUNTIF(Calendario!$A:$A${sep} ${col}$4) + COUNTIF(Calendario!$A:$A${sep} TEXT(${col}$4${sep} "yyyy-mm-dd")) > 0${sep} "SUS"${sep} IF(${col}$4 > TODAY()${sep} ""${sep} IF(COUNTIFS(Registros!B:B${sep} $B${r}${sep} Registros!E:E${sep} TEXT(${col}$4${sep} "yyyy-mm-dd")${sep} Registros!F:F${sep} "Ausente") > 0${sep} "Aus"${sep} IF($D$3="Desayuno (D)"${sep} IF(COUNTIFS(Registros!B:B${sep} $B${r}${sep} Registros!E:E${sep} TEXT(${col}$4${sep} "yyyy-mm-dd")${sep} Registros!F:F${sep} "Desayuno") > 0${sep} "D"${sep} "-")${sep} IF($D$3="Almuerzo (A)"${sep} IF(COUNTIFS(Registros!B:B${sep} $B${r}${sep} Registros!E:E${sep} TEXT(${col}$4${sep} "yyyy-mm-dd")${sep} Registros!F:F${sep} "Almuerzo") > 0${sep} "A"${sep} "-")${sep} IF(AND(COUNTIFS(Registros!B:B${sep} $B${r}${sep} Registros!E:E${sep} TEXT(${col}$4${sep} "yyyy-mm-dd")${sep} Registros!F:F${sep} "Desayuno") > 0${sep} COUNTIFS(Registros!B:B${sep} $B${r}${sep} Registros!E:E${sep} TEXT(${col}$4${sep} "yyyy-mm-dd")${sep} Registros!F:F${sep} "Almuerzo") > 0)${sep} "D+A"${sep} IF(COUNTIFS(Registros!B:B${sep} $B${r}${sep} Registros!E:E${sep} TEXT(${col}$4${sep} "yyyy-mm-dd")${sep} Registros!F:F${sep} "Almuerzo") > 0${sep} "A"${sep} IF(COUNTIFS(Registros!B:B${sep} $B${r}${sep} Registros!E:E${sep} TEXT(${col}$4${sep} "yyyy-mm-dd")${sep} Registros!F:F${sep} "Desayuno") > 0${sep} "D"${sep} "-")))))))))`
+        `=IF(OR($B${r}=""${sep} ${col}$4="")${sep} ""${sep} IF(${hasAus}${sep} "Aus"${sep} IF($D$3="Desayuno (D)"${sep} IF(${hasD}${sep} "D"${sep} ${noRec})${sep} IF($D$3="Almuerzo (A)"${sep} IF(${hasA}${sep} "A"${sep} ${noRec})${sep} IF(AND(${hasD}${sep} ${hasA})${sep} "D+A"${sep} IF(${hasA}${sep} "A"${sep} IF(${hasD}${sep} "D"${sep} ${noRec})))))))`
       );
     }
 
@@ -935,12 +940,12 @@ function crearPestanaMatrizCurso() {
   for (let c = 0; c < letters.length; c++) {
     const col = letters[c];
     sheet.getRange(`${col}51`).setFormula(
-      `=IF(${col}$4=""${sep} ""${sep} IF(COUNTIF(Calendario!$A:$A${sep} ${col}$4) + COUNTIF(Calendario!$A:$A${sep} TEXT(${col}$4${sep} "yyyy-mm-dd")) > 0${sep} "SUS"${sep} COUNTIF(${col}7:${col}50${sep} "A") + COUNTIF(${col}7:${col}50${sep} "D") + COUNTIF(${col}7:${col}50${sep} "D+A")))`
+      `=IF(${col}$4=""${sep} ""${sep} IF(COUNTIF(${col}7:${col}50${sep} "A") + COUNTIF(${col}7:${col}50${sep} "D") + COUNTIF(${col}7:${col}50${sep} "D+A") > 0${sep} COUNTIF(${col}7:${col}50${sep} "A") + COUNTIF(${col}7:${col}50${sep} "D") + COUNTIF(${col}7:${col}50${sep} "D+A")${sep} IF(COUNTIF(Calendario!$A:$A${sep} ${col}$4) + COUNTIF(Calendario!$A:$A${sep} TEXT(${col}$4${sep} "yyyy-mm-dd")) > 0${sep} "SUS"${sep} IF(${col}$4 > TODAY()${sep} ""${sep} 0))))`
     );
     sheet.getRange(`${col}51`).setFontWeight('bold').setBackground('#e2e8f0').setHorizontalAlignment('center');
 
     sheet.getRange(`${col}52`).setFormula(
-      `=IF(${col}$4=""${sep} ""${sep} IF(COUNTIF(Calendario!$A:$A${sep} ${col}$4) + COUNTIF(Calendario!$A:$A${sep} TEXT(${col}$4${sep} "yyyy-mm-dd")) > 0${sep} "SUS"${sep} COUNTIF(${col}7:${col}50${sep} "Aus")))`
+      `=IF(${col}$4=""${sep} ""${sep} IF(COUNTIF(${col}7:${col}50${sep} "Aus") > 0${sep} COUNTIF(${col}7:${col}50${sep} "Aus")${sep} IF(COUNTIF(Calendario!$A:$A${sep} ${col}$4) + COUNTIF(Calendario!$A:$A${sep} TEXT(${col}$4${sep} "yyyy-mm-dd")) > 0${sep} "SUS"${sep} IF(${col}$4 > TODAY()${sep} ""${sep} 0))))`
     );
     sheet.getRange(`${col}52`).setFontWeight('bold').setBackground('#fee2e2').setFontColor('#991b1b').setHorizontalAlignment('center');
   }

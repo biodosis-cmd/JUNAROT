@@ -21,10 +21,15 @@ const MOCK_DATA = {
 // Datos activos en memoria (inician con los guardados localmente o los mocks)
 let activeData = JSON.parse(localStorage.getItem('junaeb_data')) || MOCK_DATA;
 
+// Función auxiliar para obtener fecha local en formato YYYY-MM-DD (Chile/Local)
+function getLocalDateString(d = new Date()) {
+  return d.toLocaleDateString('en-CA');
+}
+
 // Estado de la Aplicación
 let currentUser = null;
 let currentMeal = 'desayuno'; // 'desayuno' | 'almuerzo'
-let selectedDate = new Date().toISOString().split('T')[0];
+let selectedDate = getLocalDateString();
 let selectedCourse = 'Todos';
 let records = JSON.parse(localStorage.getItem('junaeb_records') || '{}');
 

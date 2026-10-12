@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Control de Alimentación - JUNAEB</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzAwNTZiMyIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkeT0iLjMyZW0iIGZpbGw9IiNmZmYiIGZvbnQtc2l6ZT0iNDAiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkosPC90ZXh0Pjwvc3ZnPg==">
+  <meta name="theme-color" content="#0056b3">
+</head>
+<body>
+  <!-- Vista Login -->
+  <main id="login-view" class="view active">
+    <div class="login-container">
+      <h1>JUNAEB</h1>
+      <h2>Control de Asistencia</h2>
+      <p>Alimentación Escolar</p>
+      
+      <form id="login-form">
+        <div class="input-group">
+          <label for="rut">RUT</label>
+          <input type="text" id="rut" placeholder="Ej: 16789012-3" required autocomplete="username">
+        </div>
+        <div class="input-group">
+          <label for="clave">Contraseña</label>
+          <input type="password" id="clave" placeholder="Ingresa tu clave" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn-primary">Ingresar</button>
+      </form>
+      <div id="connection-status" style="margin-top: 12px; font-size: 0.85rem; color: #007bff; font-weight: 600;">
+        🟢 Versión 2.0 (Sincronización en español)
+      </div>
+      
+      <div class="demo-info">
+        <p><strong>Modo Demo (Docente):</strong><br>RUT <code>16789012-3</code> | Clave <code>1234</code></p>
+        <p style="margin-top: 8px;"><strong>Modo Demo (Inspector):</strong><br>RUT <code>12345678-9</code> | Clave <code>1234</code></p>
+      </div>
+    </div>
+  </main>
+
+  <!-- Vista Dashboard -->
+  <main id="dashboard-view" class="view">
+    <header class="app-header">
+      <div class="user-info">
+        <h3 id="user-name">Profesor(a)</h3>
+        <p id="user-role">2° Básico</p>
+      </div>
+      <button id="logout-btn" class="btn-icon" aria-label="Cerrar sesión">
+        <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+          <polyline points="16 17 21 12 16 7"></polyline>
+          <line x1="21" y1="12" x2="9" y2="12"></line>
+        </svg>
+      </button>
+    </header>
+
+    <div class="content">
+      <div class="action-bar">
+        <div class="date-selector">
+          <input type="date" id="current-date">
+        </div>
+        <div class="meal-tabs">
+          <button class="tab-btn active" data-meal="desayuno">Desayuno</button>
+          <button class="tab-btn" data-meal="almuerzo">Almuerzo</button>
+        </div>
+      </div>
+
+      <div class="course-filter" id="course-filter-container" style="display: none;">
+        <label for="course-select">Filtrar por curso:</label>
+        <select id="course-select">
+          <option value="Todos">Todos los cursos</option>
+          <option value="Prekínder">Prekínder</option>
+          <option value="Kínder">Kínder</option>
+          <option value="1° Básico">1° Básico</option>
+          <option value="2° Básico">2° Básico</option>
+          <option value="3° Básico">3° Básico</option>
+          <option value="4° Básico">4° Básico</option>
+          <option value="5° Básico">5° Básico</option>
+          <option value="6° Básico">6° Básico</option>
+          <option value="7° Básico">7° Básico</option>
+          <option value="8° Básico">8° Básico</option>
+        </select>
+      </div>
+
+      <div class="stats-summary">
+        <div class="stat-card">
+          <span class="stat-value" id="total-raciones">0</span>
+          <span class="stat-label">Raciones entregadas</span>
+        </div>
+        <div class="stat-card stat-card-absent">
+          <span class="stat-value" id="total-ausentes">0</span>
+          <span class="stat-label">Ausentes hoy</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-value" id="total-estudiantes">0</span>
+          <span class="stat-label">Matrícula</span>
+        </div>
+      </div>
+
+      <div class="students-list" id="students-list">
+        <!-- Generado dinámicamente -->
+      </div>
+    </div>
+    
+    <div class="fab-container">
+      <button id="sync-btn" class="fab-btn">
+         <svg id="sync-icon" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+           <polyline points="23 4 23 10 17 10"></polyline>
+           <polyline points="1 20 1 14 7 14"></polyline>
+           <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+         </svg>
+         <span id="sync-text">Sincronizar</span>
+         <span id="sync-badge" class="badge">0</span>
+      </button>
+    </div>
+  </main>
+  
+  <script src="app.js?v=18"></script>
+</body>
+</html>

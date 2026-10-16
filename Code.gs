@@ -461,11 +461,11 @@ function crearPestanaEstadisticas() {
 
   // 3. Tarjetas KPI
   const kpiData = [
-    { col: 'A', label: '👥 Matrícula Activa', formula: `=COUNTIFS(Estudiantes!A:A${sep} "<>"${sep} Estudiantes!E:E${sep} "<>Inactivo")`, bg: '#e0f2fe', color: '#0369a1' },
+    { col: 'A', label: '👥 Matrícula Activa', formula: `=COUNTIFS(Estudiantes!A2:A${sep} "<>"${sep} Estudiantes!E2:E${sep} "<>Inactivo")`, bg: '#e0f2fe', color: '#0369a1' },
     { col: 'B', label: '🚫 Total Ausentes', formula: `=IF($B$3="Global (Todo el historial)"${sep} COUNTIF(Registros!F:F${sep} "Ausente")${sep} COUNTIFS(Registros!F:F${sep} "Ausente"${sep} Registros!E:E${sep} ">=" & $Z$1${sep} Registros!E:E${sep} "<=" & $Z$2))`, bg: '#fee2e2', color: '#991b1b' },
     { col: 'C', label: '☕ Total Desayunos', formula: `=IF($B$3="Global (Todo el historial)"${sep} COUNTIF(Registros!F:F${sep} "Desayuno")${sep} COUNTIFS(Registros!F:F${sep} "Desayuno"${sep} Registros!E:E${sep} ">=" & $Z$1${sep} Registros!E:E${sep} "<=" & $Z$2))`, bg: '#fef3c7', color: '#b45309' },
     { col: 'D', label: '🍲 Total Almuerzos', formula: `=IF($B$3="Global (Todo el historial)"${sep} COUNTIF(Registros!F:F${sep} "Almuerzo")${sep} COUNTIFS(Registros!F:F${sep} "Almuerzo"${sep} Registros!E:E${sep} ">=" & $Z$1${sep} Registros!E:E${sep} "<=" & $Z$2))`, bg: '#dcfce7', color: '#15803d' },
-    { col: 'E', label: '📈 % Cobertura Real', formula: `=IF((A6 - B6)>0${sep} D6/(A6 - B6)${sep} 0)`, bg: '#f3e8ff', color: '#7e22ce' }
+    { col: 'E', label: '📈 % Cobertura Real', formula: `=E20`, bg: '#f3e8ff', color: '#7e22ce' }
   ];
 
   kpiData.forEach(kpi => {
@@ -493,10 +493,16 @@ function crearPestanaEstadisticas() {
     const row = 10 + i;
     const curso = LISTA_CURSOS[i];
     sheet.getRange(`A${row}`).setValue(curso);
-    sheet.getRange(`B${row}`).setFormula(`=COUNTIFS(Estudiantes!D:D${sep} A${row}${sep} Estudiantes!E:E${sep} "<>Inactivo")`);
+    sheet.getRange(`B${row}`).setFormula(`=COUNTIFS(Estudiantes!D2:D${sep} A${row}${sep} Estudiantes!E2:E${sep} "<>Inactivo")`);
     sheet.getRange(`C${row}`).setFormula(`=IF($B$3="Global (Todo el historial)"${sep} COUNTIFS(Registros!D:D${sep} A${row}${sep} Registros!F:F${sep} "Ausente")${sep} COUNTIFS(Registros!D:D${sep} A${row}${sep} Registros!F:F${sep} "Ausente"${sep} Registros!E:E${sep} ">=" & $Z$1${sep} Registros!E:E${sep} "<=" & $Z$2))`);
     sheet.getRange(`D${row}`).setFormula(`=IF($B$3="Global (Todo el historial)"${sep} COUNTIFS(Registros!D:D${sep} A${row}${sep} Registros!F:F${sep} "Almuerzo")${sep} COUNTIFS(Registros!D:D${sep} A${row}${sep} Registros!F:F${sep} "Almuerzo"${sep} Registros!E:E${sep} ">=" & $Z$1${sep} Registros!E:E${sep} "<=" & $Z$2))`);
-    sheet.getRange(`E${row}`).setFormula(`=IF((B${row} - C${row})>0${sep} D${row}/(B${row} - C${row})${sep} 0)`);
+    
+    // Auxiliares ocultas (Y: Días con registro en ese curso, Z: Cupos presentes reales = Matrícula * Días - Ausentes)
+    sheet.getRange(`Y${row}`).setFormula(`=IF(OR($B$3="Hoy (Día actual)"${sep} $B$3="Fecha específica")${sep} IF(C${row}+D${row}>0${sep} 1${sep} 0)${sep} IF($B$3="Global (Todo el historial)"${sep} COUNTUNIQUEIFS(Registros!E2:E${sep} Registros!D2:D${sep} A${row})${sep} COUNTUNIQUEIFS(Registros!E2:E${sep} Registros!D2:D${sep} A${row}${sep} Registros!E2:E${sep} ">=" & $Z$1${sep} Registros!E2:E${sep} "<=" & $Z$2)))`);
+    sheet.getRange(`Z${row}`).setFormula(`=IF(Y${row}>0${sep} MAX(0${sep} (B${row} * Y${row}) - C${row})${sep} 0)`);
+
+    // % Cobertura Real exacta (Almuerzos Entregados / Cupos Presentes Reales en los días registrados)
+    sheet.getRange(`E${row}`).setFormula(`=IF(Z${row}>0${sep} D${row} / Z${row}${sep} 0)`);
     sheet.getRange(`E${row}`).setNumberFormat('0.0%');
     sheet.setRowHeight(row, 22);
   }
@@ -506,7 +512,8 @@ function crearPestanaEstadisticas() {
   sheet.getRange(`B${totalRow}`).setFormula(`=SUM(B10:B${totalRow - 1})`);
   sheet.getRange(`C${totalRow}`).setFormula(`=SUM(C10:C${totalRow - 1})`);
   sheet.getRange(`D${totalRow}`).setFormula(`=SUM(D10:D${totalRow - 1})`);
-  sheet.getRange(`E${totalRow}`).setFormula(`=IF((B${totalRow} - C${totalRow})>0${sep} D${totalRow}/(B${totalRow} - C${totalRow})${sep} 0)`);
+  sheet.getRange(`Z${totalRow}`).setFormula(`=SUM(Z10:Z${totalRow - 1})`);
+  sheet.getRange(`E${totalRow}`).setFormula(`=IF(Z${totalRow}>0${sep} D${totalRow} / Z${totalRow}${sep} 0)`);
   sheet.getRange(`E${totalRow}`).setNumberFormat('0.0%');
   sheet.setRowHeight(totalRow, 26);
   sheet.getRange(`A${totalRow}:E${totalRow}`).setFontWeight('bold').setBackground('#e2e8f0');

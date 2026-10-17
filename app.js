@@ -29,10 +29,29 @@ function getLocalDateString(d = new Date()) {
   return d.toLocaleDateString('en-CA');
 }
 
-// Verifica si una fecha tiene clases suspendidas o es feriado
+// Verifica si una fecha tiene clases suspendidas, es feriado o es fin de semana
 function getSuspensionForDate(dateStr) {
+  if (!dateStr) return null;
+  const cleanStr = String(dateStr).trim();
   const list = (activeData && activeData.suspensiones) || MOCK_DATA.suspensiones || [];
-  return list.find(s => String(s.fecha).trim() === String(dateStr).trim()) || null;
+  const found = list.find(s => String(s.fecha).trim() === cleanStr);
+  if (found) return found;
+
+  // Bloqueo automático de fines de semana (Sábado = 6, Domingo = 0) en hora local
+  const parts = cleanStr.split('-').map(Number);
+  if (parts.length === 3 && !isNaN(parts[0]) && !isNaN(parts[1]) && !isNaN(parts[2])) {
+    const localDate = new Date(parts[0], parts[1] - 1, parts[2]);
+    const dayOfWeek = localDate.getDay();
+    if (dayOfWeek === 0 || dayOfWeek === 6) {
+      const dayName = dayOfWeek === 6 ? 'Sábado' : 'Domingo';
+      return {
+        fecha: cleanStr,
+        motivo: `Fin de semana (${dayName}) — Sin servicio de alimentación escolar`,
+        tipo: 'Fin de Semana'
+      };
+    }
+  }
+  return null;
 }
 
 // Estado de la Aplicación
@@ -395,12 +414,16 @@ function toggleRecord(studentId) {
 // Renderizado de lista de estudiantes
 function renderStudents() {
   if (checkSuspensionStatus()) {
+    const susp = getSuspensionForDate(selectedDate);
+    const isWeekend = susp && susp.tipo === 'Fin de Semana';
     studentsList.innerHTML = `
       <div style="background: white; border-radius: 12px; padding: 2.5rem 1.5rem; text-align: center; border: 1.5px dashed #fca5a5; margin-top: 0.5rem;">
         <div style="font-size: 3rem; margin-bottom: 0.75rem;">📅🚫</div>
-        <h3 style="color: #991b1b; font-size: 1.15rem; margin-bottom: 0.5rem;">Día no lectivo / Clases suspendidas</h3>
+        <h3 style="color: #991b1b; font-size: 1.15rem; margin-bottom: 0.5rem;">${isWeekend ? 'Fin de semana / Día no lectivo' : 'Día no lectivo / Clases suspendidas'}</h3>
         <p style="color: #7f1d1d; font-size: 0.9rem; max-width: 320px; margin: 0 auto; line-height: 1.4;">
-          Este día está registrado sin actividades escolares en el Calendario. Para pasar asistencia o registrar raciones, selecciona un día lectivo en el selector de fecha superior.
+          ${isWeekend 
+            ? 'Los días sábado y domingo están bloqueados automáticamente. Para pasar asistencia o registrar raciones, selecciona un día hábil (lunes a viernes) en el selector de fecha superior.' 
+            : 'Este día está registrado sin actividades escolares en el Calendario. Para pasar asistencia o registrar raciones, selecciona un día lectivo en el selector de fecha superior.'}
         </p>
       </div>
     `;

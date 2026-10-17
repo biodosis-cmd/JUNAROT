@@ -1,4 +1,4 @@
-const CACHE_NAME = 'junaeb-cache-v22';
+const CACHE_NAME = 'junaeb-cache-v23';
 const urlsToCache = [
   './',
   './index.html',

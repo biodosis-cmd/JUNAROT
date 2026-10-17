@@ -657,8 +657,18 @@ function showToast(msg) {
   }, 3500);
 }
 
+// Eliminar automáticamente el badge flotante inyectado por Netlify para que no estorbe en móviles
+function removeNetlifyBadge() {
+  const injected = document.querySelectorAll('#nl-badge-frame, #nl-hud-frame, iframe[title="Powered by Netlify"], script[data-nf-variant]');
+  injected.forEach(el => el.remove());
+}
+
 // Iniciar app cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', () => {
+  removeNetlifyBadge();
+  const observer = new MutationObserver(() => removeNetlifyBadge());
+  observer.observe(document.documentElement, { childList: true, subtree: true });
+
   init();
   
   // Registrar Service Worker para soporte offline (PWA)
